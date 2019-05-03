@@ -28,119 +28,135 @@ class RESTy extends React.Component {
     //   history: {},
     //   headersVisible: false,
     // };
-    
+
     this.state = this.props.data
-     
+
   }
 
   componentDidMount() {
     try {
       let history = JSON.parse(localStorage.getItem('history'));
-      this.setState({ history });
-      // this.handleMount({history})
+      // this.setState({ history });
+      this.props.getHistory({ history })
     } catch (e) {
       console.error(e);
     }
   }
 
   saveHistory = () => {
-    localStorage.setItem('history', JSON.stringify(this.state.history));
+    // localStorage.setItem('history', JSON.stringify(this.state.history));
+    localStorage.setItem('history', JSON.stringify(this.props.data.history));
   };
 
   updateHistory = () => {
-    let url = new URL(this.state.url);
+    let url = new URL(this.props.data.url);
 
     let lastRun = {
       host: url.hostname,
       path: url.pathname,
-      url: this.state.url,
-      method: this.state.method,
-      requestBody: this.state.requestBody,
-      username: this.state.username,
-      password: this.state.password,
-      token: this.state.token,
+      url: this.props.data.url,
+      method: this.props.data.method,
+      requestBody: this.props.data.requestBody,
+      username: this.props.data.username,
+      password: this.props.data.password,
+      token: this.props.data.token,
       body: {},
       header: {},
     };
 
     let key = md5(JSON.stringify(lastRun));
     let entry = { [key]: lastRun };
-    let history = { ...this.state.history, ...entry };
-    this.setState({ history });
+    // let history = { ...this.state.history, ...entry };
+    let history = { ...this.props.data.history, ...entry };
+    // this.setState({ history });
+    this.props.getHistory({ history })
     this.saveHistory();
   };
 
   resetFormFromHistory = event => {
     event.preventDefault();
-    let newState = this.state.history[event.currentTarget.id];
-    this.setState({ ...newState });
+    // let newState = this.state.history[event.currentTarget.id];
+    let newState = this.props.data.history[event.currentTarget.id];
+    // this.setState({ ...newState });
+    this.props.handleResetForm(newState);
   };
 
   handleChange = event => {
+    // event.preventDefault();
     let prop = event.target.name;
     let value = event.target.value;
-    this.setState({ [prop]: value });
+    // this.setState({ [prop]: value });
+    this.props.handleChangeForm({ [prop]: value });
 
     // If basic/bearer, clear the other
     if (prop === 'token') {
       let username = '';
       let password = '';
-      this.setState({ username, password });
+      // this.setState({ username, password });
+      this.props.handleUserPw(username, password);
     }
 
     if (prop.match(/username|password/)) {
       let token = '';
-      this.setState({ token });
+      // this.setState({ token });
+      this.props.handleToken(token);
     }
   };
 
   toggleHeaders = () => {
     let headersVisible = !this.state.headersVisible;
-    this.setState({ headersVisible });
+    // this.setState({ headersVisible });
+    this.props.handleHeadersVisible(headersVisible);
   };
 
   callAPI = event => {
     event.preventDefault();
 
+
     let contentType = { 'Content-Type': 'application/json' };
-    let bearer = this.state.token
-      ? { Authorization: `Bearer ${this.state.token}` }
+    let bearer = this.props.data.token
+      ? { Authorization: `Bearer ${this.props.data.token}` }
       : {};
     let basic =
-      this.state.username && this.state.password
+      this.props.data.username && this.props.data.password
         ? {
           Authorization:
-            'Basic ' + btoa(`${this.state.username}:${this.state.password}`),
+            'Basic ' + btoa(`${this.props.data.username}:${this.props.data.password}`),
         }
         : {};
 
-    superagent(this.state.method, this.state.url)
+        
+
+    superagent(this.props.data.method, this.props.data.url)
       .set('Content-Type', 'application/json')
       .set(Object.assign(contentType, bearer, basic))
-      .send(this.state.requestBody)
+      .send(this.props.data.requestBody)
       .then(response => {
         let header = response.header;
         let body = response.body;
-        this.setState({ header, body });
+        // this.setState({ header, body });
+        this.props.handleHeaderBody({ header, body });
         this.updateHistory();
       })
       .catch(e => {
         let body = { error: e.message };
         let header = {};
-        this.setState({ header, body });
+        // this.setState({ header, body });
+        this.props.handleHeaderBody(header, body);
       });
   };
 
   render() {
     return (
       <main>
-        <History history={this.state.history} resetFormFromHistory={this.resetFormFromHistory}/>
+        {/* <History history={this.state.history} resetFormFromHistory={this.resetFormFromHistory}/> */}
+        <History history={this.props.data.history} resetFormFromHistory={this.resetFormFromHistory} />
         <section className="deck">
           <form onSubmit={this.callAPI}>
-            <TopForm url={this.state.url} method={this.state.method} handleChange={this.handleChange} />
-            <BottomForm handleChange={this.handleChange} requestBody={this.state.requestBody} method={this.state.method} toggleHeaders={this.toggleHeaders} headersVisible={this.state.headersVisible} username={this.state.username} password={this.state.password} token={this.state.token} />
+            <TopForm url={this.props.data.url} method={this.props.data.method} handleChange={this.handleChange} />
+            <BottomForm handleChange={this.handleChange} requestBody={this.props.data.requestBody} method={this.props.data.method} toggleHeaders={this.toggleHeaders} headersVisible={this.props.data.headersVisible} username={this.props.data.username} password={this.props.data.password} token={this.props.data.token} />
           </form>
-          <Results header={this.state.header} body={this.state.body} />
+          <Results header={this.props.data.header} body={this.props.data.body} />
         </section>
       </main>
     );
@@ -152,10 +168,15 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = (dispatch, getState) => ({
-  // fetchSchemas: () => dispatch(actions.getSchemas()),
-  handleMount: payload => dispatch(actions.mount(payload))
+  getHistory: payload => dispatch(actions.mount(payload)),
+  handleResetForm: payload => dispatch(actions.resetForm(payload)),
+  handleChangeForm: payload => dispatch(actions.changeForm(payload)),
+  handleUserPw: payload => dispatch(actions.userPw(payload)),
+  handleToken: payload => dispatch(actions.token(payload)),
+  handleHeadersVisible: payload => dispatch(actions.headers(payload)),
+  handleHeaderBody: payload => dispatch(actions.headersBody(payload))
 
-  
+
 });
 
 // export default RESTy;
