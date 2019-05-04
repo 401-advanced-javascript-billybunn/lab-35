@@ -6,7 +6,7 @@
 ### Author: Billy & Vanessa
 
 ### Links and Resources
-* [repo](https://github.com/Wei9023/lab-34)
+* [repo](https://github.com/401d29-lab-35/lab-35)
 * [netlify](https://billy-vanessa-resty.netlify.com/)
 
 ## Introduction
