@@ -61,4 +61,4 @@ A simplify API development environment using redux store.
 
 
 #### UML
-![uml](./assets/uml-lab35.pdf)
+![uml](./assets/lab-35.jpeg)
